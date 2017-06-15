@@ -2,7 +2,7 @@ const OpenShiftClient = require('./lib/index.js')
 //const OpenShiftClient = require('openshift-client');
 
 // Watch Deployments
-const oapi = new OpenShiftClient.OApi(OpenShiftClient.config.fromKubeconfig());
+const oapi = new OpenShiftClient.OApi(OpenShiftClient.config.getInCluster()());
 const streamDC = oapi.deploymentconfigs.get({ qs: { watch: true } });
 const JSONStream = require('json-stream');
 const jsonStreamDC = new JSONStream();
