@@ -1,5 +1,5 @@
 {
-  "name": "openshift-client-scratch",
+  "name": "custom-controller"
   "version": "0.0.1",
   "description": "Example using kubernetes-client to implement an OpenShift client",
   "main": "lib/index.js",
@@ -23,6 +23,7 @@
     "js-yaml": "^3.8.4",
     "json-stream": "^1.0.0",
     "kubernetes-client": "^3.11.0",
+    "openshift-client":"latest",
     "socket.io": "^2.0.2"
   }
 }
