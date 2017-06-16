@@ -1,8 +1,12 @@
-const OpenShiftClient = require('./lib/index.js')
-//const OpenShiftClient = require('openshift-client');
+const OpenShiftClient = require('openshift-client');
+const Api = require('kubernetes-client');
+const core = new Api.Core(Api.config.fromKubeconfig());
+//const core = new Api.Core(Api.config.getInCluster());
 
 // Watch Deployments
 const oapi = new OpenShiftClient.OApi(OpenShiftClient.config.fromKubeconfig());
+//const oapi = new OpenShiftClient.OApi(OpenShiftClient.config.getInCluster());
+
 const streamDC = oapi.deploymentconfigs.get({ qs: { watch: true,labelSelector: 'istio=true' } });
 const JSONStream = require('json-stream');
 const jsonStreamDC = new JSONStream();
@@ -55,19 +59,33 @@ const dcPatch=
 }
 
 jsonStreamDC.on('data', object => {
-	console.log(object.type);
+	//console.log(object.type);
 	if(object.type=='ADDED'){
-		console.log(initPatch);
+		//console.log(initPatch);
 		object.object.spec.template.metadata.annotations["pod.beta.kubernetes.io/init-containers"]=JSON.stringify(initPatch);
 		object.object.spec.template.spec.containers.push(dcPatch);
-		console.log(JSON.stringify(object.object, null, 2));
-		setTimeout(function(){
-			oapi.namespaces.deploymentconfigs(object.object.metadata.name).patch({
-				body: object.object
-			},function(err,msg){
-				console.log(err,msg);
+		//console.log(JSON.stringify(object.object, null, 2));
+
+		//update Deployment Config	w/ side card	
+		oapi.ns(object.object.metadata.namespace).deploymentconfigs(object.object.metadata.name).patch({
+			body: object.object
+		},function(err,msg){
+			console.log('Patched DC '+object.object.metadata.namespace+"/"+object.object.metadata.name);
+			//update service with http
+	
+			core.ns(object.object.metadata.namespace).services(object.object.metadata.name).get(function(err,obj){
+				console.log(err,obj);	
+				obj.spec.ports[0].name = 'http-'+obj.spec.ports[0].name;
+				core.ns(object.object.metadata.namespace).services(object.object.metadata.name).patch({
+					body: obj
+				},function(err,msg){
+					console.log(err,msg);
+					console.log('service updated');
+				});
 			});
-		},500);
+		});
+
+
 	}
    //console.log('DC:', JSON.stringify(object, null, 2));
 });
